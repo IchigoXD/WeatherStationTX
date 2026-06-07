@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Weather Station Network Dashboard — Real-time environmental monitoring from 5 distributed sensor stations with soil temperature, humidity, leaf wetness, and rain gauge data.">
+    <title>Weather Station Network | Dashboard</title>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- Custom Styles (Vanilla CSS) -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         MOBILE HAMBURGER
+    ═══════════════════════════════════════════════════════════════════ -->
+    <button class="hamburger-toggle" id="hamburger-toggle" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+    </button>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         SIDEBAR
+    ═══════════════════════════════════════════════════════════════════ -->
+    <aside class="glass sidebar" id="sidebar">
+
+        <!-- Brand -->
+        <div class="sidebar-header">
+            <div class="sidebar-brand">
+                <span class="pulse-dot"></span>
+                WEATHER STATION
+            </div>
+        </div>
+
+        <!-- Navigation (DS-02: event passed explicitly) -->
+        <nav class="sidebar-nav">
+            <div class="nav-section-label">Network</div>
+            <a class="nav-link active" onclick="switchNode(null, event)" id="nav-overview">
+                📡 Network Overview
+            </a>
+
+            <div class="nav-section-label">Stations</div>
+            <a class="nav-link" onclick="switchNode(1, event)" id="nav-node-1">
+                🌿 Child Station 01
+                <span class="status-dot unknown" id="status-dot-1"></span>
+            </a>
+            <a class="nav-link" onclick="switchNode(2, event)" id="nav-node-2">
+                🌿 Child Station 02
+                <span class="status-dot unknown" id="status-dot-2"></span>
+            </a>
+            <a class="nav-link" onclick="switchNode(3, event)" id="nav-node-3">
+                🌿 Child Station 03
+                <span class="status-dot unknown" id="status-dot-3"></span>
+            </a>
+            <a class="nav-link" onclick="switchNode(4, event)" id="nav-node-4">
+                🌿 Child Station 04
+                <span class="status-dot unknown" id="status-dot-4"></span>
+            </a>
+            <a class="nav-link" onclick="switchNode(5, event)" id="nav-node-5">
+                🏠 Parent Station
+                <span class="status-dot unknown" id="status-dot-5"></span>
+            </a>
+        </nav>
+
+        <!-- Footer / Export -->
+        <div class="sidebar-footer">
+            <a href="/export" class="btn-export" id="btn-export">
+                ⬇ Export Data (CSV)
+            </a>
+        </div>
+    </aside>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         MAIN CONTENT
+    ═══════════════════════════════════════════════════════════════════ -->
+    <main class="main-content" id="main-content">
+
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div>
+                <h1 class="header-title" id="view-title">Network Overview</h1>
+                <p class="header-subtitle" id="view-subtitle">Real-time telemetry from all 5 stations</p>
+            </div>
+            <div class="header-controls">
+                <!-- Time Range -->
+                <div class="date-controls">
+                    <label for="hours-range">Range:</label>
+                    <select id="hours-range">
+                        <option value="1">1 Hour</option>
+                        <option value="6">6 Hours</option>
+                        <option value="12">12 Hours</option>
+                        <option value="24" selected>24 Hours</option>
+                        <option value="72">3 Days</option>
+                        <option value="168">7 Days</option>
+                    </select>
+                </div>
+
+                <!-- Health Check -->
+                <button class="btn-health" id="btn-health" onclick="triggerHealthCheck()">
+                    🔍 HEALTH CHECK
+                </button>
+
+                <!-- Security Badge -->
+                <div class="badge badge-secure" id="security-badge">
+                    <span class="dot"></span>
+                    SYSTEM SECURE
+                </div>
+            </div>
+        </header>
+
+        <!-- Node Status Cards -->
+        <div class="nodes-grid" id="nodes-grid">
+            <!-- Injected by JS -->
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid" id="stats-grid">
+            <!-- Injected by JS -->
+            <div class="glass stat-card">
+                <div class="stat-label">Temperature</div>
+                <div class="stat-value skeleton" style="width: 80px; height: 28px;"></div>
+            </div>
+            <div class="glass stat-card">
+                <div class="stat-label">Humidity</div>
+                <div class="stat-value skeleton" style="width: 80px; height: 28px;"></div>
+            </div>
+            <div class="glass stat-card">
+                <div class="stat-label">Leaf Wetness</div>
+                <div class="stat-value skeleton" style="width: 80px; height: 28px;"></div>
+            </div>
+            <div class="glass stat-card">
+                <div class="stat-label">Rain Gauge</div>
+                <div class="stat-value skeleton" style="width: 80px; height: 28px;"></div>
+            </div>
+            <div class="glass stat-card">
+                <div class="stat-label">Ground Temp</div>
+                <div class="stat-value skeleton" style="width: 80px; height: 28px;"></div>
+            </div>
+            <div class="glass stat-card">
+                <div class="stat-label">Active Nodes</div>
+                <div class="stat-value skeleton" style="width: 80px; height: 28px;"></div>
+            </div>
+        </div>
+
+        <!-- Charts Row 1: Temperature + Humidity -->
+        <div class="charts-grid">
+            <div class="glass chart-card">
+                <div class="chart-title">
+                    <span class="icon">🌡️</span> Temperature
+                </div>
+                <div class="chart-container">
+                    <canvas id="chart-temp"></canvas>
+                </div>
+            </div>
+
+            <div class="glass chart-card">
+                <div class="chart-title">
+                    <span class="icon">💧</span> Humidity
+                </div>
+                <div class="chart-container">
+                    <canvas id="chart-humidity"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row 2: Dew Point + Soil Profile -->
+        <div class="charts-grid">
+            <div class="glass chart-card">
+                <div class="chart-title">
+                    <span class="icon">🌫️</span> Dew Point (Calculated)
+                </div>
+                <div class="chart-container">
+                    <canvas id="chart-dew"></canvas>
+                </div>
+            </div>
+
+            <div class="glass chart-card">
+                <div class="chart-title">
+                    <span class="icon">🌱</span> Soil Temperature Profile
+                </div>
+                <div class="chart-container">
+                    <canvas id="chart-soil"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row 3: Leaf Wetness + Rain Gauge -->
+        <div class="charts-grid">
+            <div class="glass chart-card">
+                <div class="chart-title">
+                    <span class="icon">🍃</span> Leaf Wetness
+                </div>
+                <div class="chart-container">
+                    <canvas id="chart-leaf"></canvas>
+                </div>
+            </div>
+
+            <div class="glass chart-card">
+                <div class="chart-title" id="rain-chart-title">
+                    <span class="icon">🌧️</span> Rain Gauge
+                </div>
+                <div class="chart-container">
+                    <canvas id="chart-rain"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Transmission Logs Table -->
+        <div class="glass table-card">
+            <div class="table-header">
+                <div class="chart-title" style="margin-bottom: 0;">
+                    <span class="icon">📋</span> Recent Transmission Logs
+                </div>
+            </div>
+            <div class="table-wrapper">
+                <table class="data-table" id="data-table">
+                    <thead>
+                        <tr>
+                            <th>Station</th>
+                            <th>Timestamp</th>
+                            <th>Temp</th>
+                            <th>Humidity</th>
+                            <th>Leaf</th>
+                            <th>Signal</th>
+                            <th>Status</th>
+                            <th>Security</th>
+                        </tr>
+                    </thead>
+                    <tbody id="log-body">
+                        <tr>
+                            <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                                Waiting for data...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Dashboard Logic -->
+    <script src="/static/js/dashboard.js"></script>
+</body>
+</html>

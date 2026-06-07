@@ -1,0 +1,63 @@
+I am doing the following project
+1. There is a weather station with 4 child sub stations, 1 parent station and a main station
+1.1 The sensores and the modules in the child stations
+ATMEGA328P
+AHT10 : room temp and humidity
+Capacitive leaf wetness sensor*1*
+Temperature probe with 5 DS18B20 sensors: to get soil temperature in different depths in the soil (0m(ground), 20m, 40m, 60m,80m)*2*
+RTC module DC3231
+memory module : set to pin D8
+LoRa module SX1278 RA-02 AI Thinker 433MHz
+send an alert to the main station if the ground pin and a selected digital pin connection is lost.
+*1*,*2*: these sensors are read by using an ESP32 and that ESP32 works as the slave to communicate with ATMEGA ic via I2c communication
+1.2 The sensors and the modules in the parent station
+ATMEGA328P
+AHT10 : room temp and humidity
+Capacitive leaf wetness sensor*
+Temperature probe with 5 DS18B20 sensors: to get soil temperature in different depths in the soil (0m(ground), 20m, 40m, 60m,80m)*
+RTC module DC3231
+memory module : set to pin D8
+Siren: connected using relay module. the aim is to poweup the siren if the ground pin and a selected digital pin connection is lost. Either itself or child is alerted that the security pin connection was lost, the siren need to be on.
+LoRa module SX1278 RA-02 AI Thinker 433MHz
+Rain gauge sensor (Tipping bucket) via I2C
+* these sensors are read by using an ESP32 and that ESP32 works as the slave to communicate with ATMEGA ic via I2c communication
+1.3 The sensors and the modules in the main station
+ATMEGA328P
+LoRa module SX1278 RA-02 AI Thinker 433MHz
+SIM800A module (set to pin 0 and 1)
+Memory module
+RTC module
+2. Readings:
+The all nodes should read the data without any corruption. if a sensor is not working, the node unit should send the awilable readings and the not working or not awailable sensor readings should set to 0
+the readings should save to the memory module until the readings are successfully sent to the next point.
+3. Comunication within the stations:
+the child nodes and the parent node are comunicate by using the LoRa module. The parent should send an acknowladgement to the child nodes to confirm that the data is received.
+the child nodes should resend the data if an ack was not received.
+the LoRa comunication must be stable and use the full strength to maximize the comunication distance.
+The parent node should send the all 4 child nodes data sets and its own readings data to the main station by using LoRa. There should be an ack in here also.
+
+4. main station:
+main station should send the received data to the server by using sim module. the connection must be stable andack should be work here too.
+
+Server:
+server should process the received data and show all the readings in a web interface. the srver must be created using python and it should show the plots, readings, and everything c arly.There should be an average plots and individual plots for each node. It should has a function to export the readings to an excel or csv file.
+Database: MySQL
+
+Data packet:
+The data should be contain the following:
+reading time
+reading date
+node's ID
+all the readings
+
+Notes: 1. The connection and the communication must be stable
+2. The ATMEGA ic memory must be efficiently used. Should not exceeded.
+3. we cant use the delay keyword inside the codes. because the security pin need to be always monitoring. but the sensors should read once per 10 minutes.
+4. if any of the data packet is unable to send to the next node (or server), then it should need to be resend again at the next time. 
+5. The lora connection must not be dead. all are need to connect with each other and listen for the receiving data.
+6. main to server data upload should be proceed without delay if the memory has any unsent data. if all the data is uploaded to the server, then wait until the data is received.
+7. use any kind of identity checker for LoRa. the data should not be damaged by the externel radio frequencies. Check the data is receiving from the weather station network or not before accept them.
+8. APN is airtelgprs.com
+9. server should ask a confirmation from the main station to make sure that the all stations are working properly. when the main station receive that confirmation request, the main should ask from all other nodes to confirm that they are alive or not. then send the response to the server. No need to save this confirmation inside the database. 
+10. high quality graphics and advanced logics are need for the server and web interface. 
+11. Arduino codes must be optimized and make sure the memory is efficiently managed. 
