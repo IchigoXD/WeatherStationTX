@@ -15,7 +15,7 @@ struct SlavePayloadParent {
 
 struct SensorData {
     float    temp;
-    float    humidity;          
+    float    humidity;
     float    soil_temp[5];      
     uint16_t leaf_wetness;      
     uint16_t rain_gauge;        
@@ -28,7 +28,7 @@ struct DataPacket {
     uint8_t  type;              
     uint8_t  sourceId;          
     uint8_t  relayControl;
-    uint16_t sequenceId;        
+    uint16_t sequenceId;
     uint32_t timestamp;         
     SensorData data;            
     int16_t  rssi;              
@@ -41,12 +41,14 @@ const uint8_t  MAGIC_BYTE = 0xAF;
 const uint8_t  PKT_DATA   = 0x01;
 const uint8_t  NODE_PARENT = 5;
 const uint8_t  NODE_MAIN   = 6;
+
 const long     LORA_FREQ  = 433E6;
 const uint8_t  I2C_ESP32_SLAVE = 0x08;
 
 const uint8_t PIN_LORA_CS   = 10;
 const uint8_t PIN_LORA_RST  = 9;
 const uint8_t PIN_LORA_DIO0 = 2;
+
 const uint8_t PIN_SECURITY  = 3;
 const uint8_t PIN_LED_A2    = A2;
 const uint8_t PIN_LED_A3    = A3;
@@ -135,7 +137,7 @@ public:
             
             SensorData data = {0};
             if (!ahtConnected) ahtConnected = aht.begin();
-
+            
             if (ahtConnected) {
                 sensors_event_t h, t;
                 aht.getEvent(&h, &t);
@@ -147,19 +149,27 @@ public:
 
             SlavePayloadParent slaveData = {0};
             uint8_t reqSize = sizeof(SlavePayloadParent);
-            Wire.requestFrom((uint8_t)I2C_ESP32_SLAVE, reqSize);
+            uint8_t bytesRead = Wire.requestFrom((uint8_t)I2C_ESP32_SLAVE, reqSize);
             
-            if (Wire.available() == reqSize) {
+            if (bytesRead == reqSize) {
                 uint8_t* ptr = (uint8_t*)&slaveData;
-                for (size_t i = 0; i < reqSize; i++) ptr[i] = Wire.read();
+                for (size_t i = 0; i < reqSize; i++) {
+                    ptr[i] = Wire.read();
+                }
+                
                 memcpy(data.soil_temp, slaveData.soil_temp, sizeof(data.soil_temp));
                 data.leaf_wetness = slaveData.leaf_wetness;
                 data.rain_gauge = slaveData.rain_count;
+                data.sensor_status = slaveData.sensor_status; 
+            } else {
+                data.sensor_status = 0;
+                while(Wire.available()) Wire.read(); 
             }
 
             data.security_alert = (digitalRead(PIN_SECURITY) == LOW) ? 1 : 0;
+            
             lora->sendData(data);
-            ledRX.flash(); // Indicate successful read & package
+            ledRX.flash(); 
         }
     }
 };
@@ -169,13 +179,12 @@ LoRaTransmitter loraTX;
 ParentHub hub(&loraTX);
 
 void setup() {
-    delay(2000); // Hardware stabilization
+    delay(2000);
     ledRX.begin();
     ledTX.begin();
     loraTX.begin();
     hub.begin();
     
-    // Boot sequence flash
     ledRX.flash(); ledTX.flash();
 }
 
